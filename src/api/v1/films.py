@@ -1,11 +1,13 @@
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
+from starlette.requests import Request
 
 from api.v1 import messages
 from models.film import FilmOut, FilmGenreOut
 from models.utils import PaginatedResults
+from services.auth import CheckAuth, get_check_auth_service
 from services.film import (
     FilmServiceID, get_film_service_id, 
     FilmServiceSearch, get_film_service_search,
@@ -21,9 +23,13 @@ router = APIRouter()
             response_model=FilmOut,
             description="Получение фильма по id")
 @rate_limit()
-async def film_details(request: Request,
-                       film_id: str,
-                       film_service: FilmServiceID = Depends(get_film_service_id)) -> FilmOut:
+async def film_details(
+        request: Request,
+        film_id: str,
+        film_service: FilmServiceID = Depends(get_film_service_id),
+        check_auth: CheckAuth = Depends(get_check_auth_service),
+) -> FilmOut:
+    user = await check_auth.check_authorization(request)
     film = await film_service.get_data(film_id)
     if not film:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=messages.FILM_NOT_FOUND)
@@ -42,8 +48,10 @@ async def search_by_params(
                                           description=" Pagination page number")] = 1,
         page_size: Annotated[int, Query(ge=1,
                                         description="Pagination page size")] = 10,
-        film_service: FilmServiceSearch = Depends(get_film_service_search)
+        film_service: FilmServiceSearch = Depends(get_film_service_search),
+        check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> PaginatedResults[FilmGenreOut]:
+    user = await check_auth.check_authorization(request)
     films = await film_service.get_data(search=search,
                                         page_number=page_number,
                                         page_size=page_size)
@@ -68,7 +76,9 @@ async def main_page(
         genre: str = None,
         film_service: FilmServiceSort = Depends(get_film_service_sort),
         sort: str = '-imdb_rating',
+        check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> PaginatedResults[FilmGenreOut]:
+    user = await check_auth.check_authorization(request)
     films = await film_service.get_data(page_number, page_size, genre, sort=sort)
     films_out = [FilmGenreOut.from_film(film) for film in films]
     if not films:

@@ -1,12 +1,14 @@
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
+from starlette.requests import Request
 
 from api.v1 import messages
 from models.film import FilmGenreOut
 from models.person import Person
 from models.utils import PaginatedResults
+from services.auth import CheckAuth, get_check_auth_service
 from services.person import (
     get_person_service_id, PersonServiceID,
     get_person_service_search, PersonServiceSearch,
@@ -20,9 +22,13 @@ router = APIRouter()
 @router.get('/{person_id}/',
             response_model=Person,
             description="Получение персоны по id")
-async def person_details(request: Request,
-                         person_id: str,
-                         person_service: PersonServiceID = Depends(get_person_service_id)) -> Person:
+async def person_details(
+        request: Request,
+        person_id: str,
+        person_service: PersonServiceID = Depends(get_person_service_id),
+        check_auth: CheckAuth = Depends(get_check_auth_service),
+) -> Person:
+    user = await check_auth.check_authorization(request)
     person = await person_service.get_data(person_id)
     if not person:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=messages.PERSON_NOT_FOUND)
@@ -40,8 +46,10 @@ async def persons_search(
                                description="Pagination page number")] = 1,
         page_size: Annotated[int, Query(ge=1,
                              description="Pagination page size")] = 10,
-        person_service: PersonServiceSearch = Depends(get_person_service_search)
+        person_service: PersonServiceSearch = Depends(get_person_service_search),
+        check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> PaginatedResults[Person]:
+    user = await check_auth.check_authorization(request)
     persons = await person_service.get_data(name, page_number, page_size)
     if not persons:
         raise HTTPException(status_code=HTTPStatus.OK, detail=messages.PERSON_NOT_FOUND)
@@ -59,8 +67,10 @@ async def films_by_persons(
                                           description="Pagination page number")] = 1,
         page_size: Annotated[int, Query(ge=1,
                                         description="Pagination page size")] = 10,
-        person_service: FilmByPersonService = Depends(get_film_by_person_service)
+        person_service: FilmByPersonService = Depends(get_film_by_person_service),
+        check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> PaginatedResults[FilmGenreOut]:
+    user = await check_auth.check_authorization(request)
     films = await person_service.get_data(person_id, page_number, page_size)
     if not films:
         raise HTTPException(status_code=HTTPStatus.OK, detail=messages.PERSON_NOT_FOUND)

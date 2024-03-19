@@ -1,13 +1,15 @@
 import uvicorn
 
 from contextlib import asynccontextmanager
+
+from async_fastapi_jwt_auth import AuthJWT
 from elasticsearch import AsyncElasticsearch
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from redis.asyncio import Redis
 
 from api.v1 import films, persons, genres
-from core.config import settings
+from core.config import settings, JWTSettings
 from core.logger import LOGGING
 from db import elastic
 from db import redis
@@ -24,7 +26,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title='Read-only API для онлайн-кинотеатра',
-    # title=config.PROJECT_NAME,
     docs_url='/api/openapi',
     openapi_url='/api/openapi.json',
     default_response_class=ORJSONResponse,
@@ -37,6 +38,11 @@ app = FastAPI(
 app.include_router(films.router, prefix='/api/v1/films', tags=['films'])
 app.include_router(persons.router, prefix='/api/v1/persons', tags=['persons'])
 app.include_router(genres.router, prefix='/api/v1/genres', tags=['genres'])
+
+
+@AuthJWT.load_config
+def get_config():
+    return JWTSettings()
 
 
 if __name__ == '__main__':

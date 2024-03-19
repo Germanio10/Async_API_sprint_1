@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 from dotenv import load_dotenv
-from pydantic import Field
+from pydantic import Field, BaseModel
 from pydantic_settings import BaseSettings
 
 
@@ -41,9 +41,17 @@ class Settings(BaseSettings):
     person_cache_expire: int = Field(validation_alias='PERSON_CACHE_EXPIRE_IN_SECONDS', default=60 * 5)
     film_cache_expire: int = Field(validation_alias='FILM_CACHE_EXPIRE_IN_SECONDS', default=60 * 5)
     genre_cache_expire: int = Field(validation_alias='GENRE_CACHE_EXPIRE_IN_SECONDS', default=60 * 5)
+    auth_service_url: str = Field(validation_alias='AUTH_SERVICE_URL', default='http://localhost:82')
     redis: RedisSettings = RedisSettings()
     elasticsearch: ElasticsearchSettings = ElasticsearchSettings()
     rate_limit: RateLimitSettings = RateLimitSettings()
 
 
 settings = Settings()
+
+
+class JWTSettings(BaseModel):
+    authjwt_secret_key: str = "secret"
+    authjwt_token_location: set = {"cookies"}
+    authjwt_cookie_secure: bool = False
+    authjwt_cookie_csrf_protect: bool = False
