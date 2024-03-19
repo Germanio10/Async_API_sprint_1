@@ -1,0 +1,10 @@
+.idea
+.venv
+.env
+/etl/person.json
+/etl/genre.json
+/api/v1/__pycache__
+.docker.env
+.pytest_cache
+__pycache__
+venv/
