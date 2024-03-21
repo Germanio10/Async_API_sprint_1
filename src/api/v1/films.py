@@ -2,6 +2,7 @@ from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from starlette import status
 from starlette.requests import Request
 
 from api.v1 import messages
@@ -30,6 +31,8 @@ async def film_details(
         check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> FilmOut:
     user = await check_auth.check_authorization(request)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Please login')
     film = await film_service.get_data(film_id)
     if not film:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=messages.FILM_NOT_FOUND)
@@ -52,6 +55,8 @@ async def search_by_params(
         check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> PaginatedResults[FilmGenreOut]:
     user = await check_auth.check_authorization(request)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Please login')
     films = await film_service.get_data(search=search,
                                         page_number=page_number,
                                         page_size=page_size)
@@ -79,6 +84,8 @@ async def main_page(
         check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> PaginatedResults[FilmGenreOut]:
     user = await check_auth.check_authorization(request)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Please login')
     films = await film_service.get_data(page_number, page_size, genre, sort=sort)
     films_out = [FilmGenreOut.from_film(film) for film in films]
     if not films:

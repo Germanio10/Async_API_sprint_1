@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from starlette.requests import Request
+from starlette import status
 
 from api.v1 import messages
 from models.genre import Genre
@@ -29,6 +30,8 @@ async def genre_details(
         check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> Genre:
     user = await check_auth.check_authorization(request)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Please login')
     genre = await genre_service.get_data(genre_id)
     if not genre:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=messages.GENRE_NOT_FOUND)
@@ -50,6 +53,8 @@ async def all_genres(
         check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> PaginatedResults[Genre]:
     user = await check_auth.check_authorization(request)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Please login')
     genres = await genre_service.get_data(page_number, page_size, sort)
     if not genres:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=messages.GENRE_NOT_FOUND)

@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from starlette.requests import Request
+from starlette import status
 
 from api.v1 import messages
 from models.film import FilmGenreOut
@@ -29,6 +30,8 @@ async def person_details(
         check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> Person:
     user = await check_auth.check_authorization(request)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Please login')
     person = await person_service.get_data(person_id)
     if not person:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=messages.PERSON_NOT_FOUND)
@@ -50,6 +53,8 @@ async def persons_search(
         check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> PaginatedResults[Person]:
     user = await check_auth.check_authorization(request)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Please login')
     persons = await person_service.get_data(name, page_number, page_size)
     if not persons:
         raise HTTPException(status_code=HTTPStatus.OK, detail=messages.PERSON_NOT_FOUND)
@@ -71,6 +76,8 @@ async def films_by_persons(
         check_auth: CheckAuth = Depends(get_check_auth_service),
 ) -> PaginatedResults[FilmGenreOut]:
     user = await check_auth.check_authorization(request)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Please login')
     films = await person_service.get_data(person_id, page_number, page_size)
     if not films:
         raise HTTPException(status_code=HTTPStatus.OK, detail=messages.PERSON_NOT_FOUND)

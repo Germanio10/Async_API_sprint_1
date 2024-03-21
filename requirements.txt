@@ -9,4 +9,5 @@ uvloop==0.17.0 ; sys_platform != "win32" and implementation_name == "cpython"
 pydantic==2.6.1
 pydantic-settings==2.1.0
 python-dotenv==1.0.0
+starlette==0.27.0
 gunicorn==21.2.0
